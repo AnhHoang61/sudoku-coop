@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Sudoku Co-op</title>
+<meta name="description" content="Chơi Sudoku cùng nhau giữa PC và máy tính bảng, kết nối trực tiếp P2P.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧩</text></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">🧩</span>
+      <span class="brand-text">Sudoku <em>Co-op</em></span>
+    </div>
+    <div class="topbar-right">
+      <div id="timer" class="timer" aria-live="off">00:00</div>
+      <div id="conn" class="pill pill-off">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="connText">Chưa kết nối</span>
+      </div>
+      <button id="btnMenu" class="btn btn-ghost" type="button">Phòng</button>
+    </div>
+  </header>
+
+  <main class="stage">
+    <section class="board-wrap">
+      <div id="board" class="board" role="grid" aria-label="Bảng Sudoku"></div>
+      <div id="banner" class="banner" hidden></div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-block">
+        <div class="panel-label">Người chơi</div>
+        <ul id="players" class="players"></ul>
+      </div>
+
+      <div class="panel-block">
+        <div class="panel-label">Nhập số</div>
+        <div id="pad" class="pad"></div>
+        <div class="pad-actions">
+          <button id="btnNote" class="btn btn-toggle" type="button" aria-pressed="false">
+            ✏️ Ghi chú <kbd>N</kbd>
+          </button>
+          <button id="btnErase" class="btn" type="button">🧽 Xoá <kbd>⌫</kbd></button>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <div class="panel-label">Ván đấu</div>
+        <div class="row">
+          <label class="field">
+            <span>Độ khó</span>
+            <select id="difficulty">
+              <option value="easy">Dễ</option>
+              <option value="medium" selected>Trung bình</option>
+              <option value="hard">Khó</option>
+              <option value="expert">Cực khó</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button id="btnNew" class="btn btn-primary" type="button">Ván mới</button>
+          <button id="btnCheck" class="btn" type="button">Kiểm tra</button>
+        </div>
+        <p id="hostNote" class="hint" hidden>Chỉ chủ phòng đổi được ván đấu.</p>
+      </div>
+
+      <div class="panel-block">
+        <label class="check">
+          <input id="optConflict" type="checkbox" checked>
+          <span>Tô đỏ số sai luật</span>
+        </label>
+        <label class="check">
+          <input id="optSame" type="checkbox" checked>
+          <span>Làm nổi số giống nhau</span>
+        </label>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+</div>
+
+<!-- Lobby -->
+<div id="lobby" class="overlay">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="lobbyTitle">
+    <h1 id="lobbyTitle" class="sheet-title">Chơi cùng nhau</h1>
+    <p class="sheet-sub">Một máy tạo phòng, máy kia nhập mã. Kết nối trực tiếp giữa hai thiết bị.</p>
+
+    <label class="field">
+      <span>Tên của bạn</span>
+      <input id="nameInput" type="text" maxlength="16" placeholder="VD: PC của tôi" autocomplete="nickname">
+    </label>
+
+    <div class="tabs" role="tablist">
+      <button class="tab is-active" data-tab="create" role="tab" aria-selected="true" type="button">Tạo phòng</button>
+      <button class="tab" data-tab="join" role="tab" aria-selected="false" type="button">Vào phòng</button>
+    </div>
+
+    <div id="tab-create" class="tabpane is-active">
+      <button id="btnCreate" class="btn btn-primary btn-block" type="button">Tạo phòng mới</button>
+      <div id="createResult" hidden>
+        <div class="code-box">
+          <span class="panel-label">Mã phòng</span>
+          <output id="roomCode" class="room-code">------</output>
+          <div class="row">
+            <button id="btnCopyCode" class="btn" type="button">Copy mã</button>
+            <button id="btnCopyLink" class="btn" type="button">Copy link</button>
+          </div>
+        </div>
+        <p class="hint">Mở link này trên máy tính bảng là vào phòng luôn, không cần nhập mã.</p>
+        <div id="waiting" class="waiting"><span class="spinner" aria-hidden="true"></span> Đang chờ người thứ hai…</div>
+      </div>
+    </div>
+
+    <div id="tab-join" class="tabpane">
+      <label class="field">
+        <span>Mã phòng</span>
+        <input id="joinInput" type="text" maxlength="8" placeholder="VD: 7K2QP4"
+               autocapitalize="characters" autocomplete="off" spellcheck="false" inputmode="text">
+      </label>
+      <button id="btnJoin" class="btn btn-primary btn-block" type="button">Vào phòng</button>
+    </div>
+
+    <p id="lobbyErr" class="err" hidden></p>
+    <button id="btnSolo" class="btn btn-ghost btn-block" type="button">Chơi một mình</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="js/sudoku.js"></script>
+<script src="js/net.js"></script>
+<script src="js/app.js"></script>
+<script src="js/wire.js"></script>
+</body>
+</html>
