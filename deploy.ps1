@@ -9,7 +9,11 @@ param(
   [switch]$UserSite
 )
 
-$ErrorActionPreference = 'Stop'
+# 'Continue' chu khong 'Stop': PowerShell 5.1 boc stderr cua native exe (gh, git)
+# thanh ErrorRecord, voi 'Stop' thi moi canh bao vo hai cung lam script chet.
+$ErrorActionPreference = 'Continue'
+$gh  = 'C:\Program Files\GitHub CLI\gh.exe'
+$git = 'D:\git\cmd\git.exe'
 $env:PATH = "$env:PATH;D:\git\cmd;C:\Program Files\GitHub CLI"
 
 function Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
