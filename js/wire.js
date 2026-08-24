@@ -155,8 +155,11 @@
     btn.disabled = true;
     btn.textContent = 'Đang tạo…';
     try {
-      const code = await net.host();
+      // Dat ten TRUOC khi host(): net.myName duoc dung khi chao lai qua
+      // broker moi ket noi duoc trong nen.
       S.me.name = myName();
+      net.myName = S.me.name;
+      const code = await net.host();
       $('#roomCode').textContent = code;
       $('#createResult').hidden = false;
       btn.hidden = true;
@@ -178,6 +181,7 @@
     btn.disabled = true;
     btn.textContent = 'Đang vào…';
     S.me.name = myName();
+    net.myName = S.me.name;
     try {
       await net.join(code);
       setConn('on', 'Đã kết nối');
