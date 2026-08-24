@@ -90,15 +90,16 @@ Ok 'Push xong.'
 
 # --- 6. Bat GitHub Pages ---
 Step 'Bat GitHub Pages'
-$body = '{"source":{"branch":"main","path":"/"}}'
-$body | gh api "repos/$user/$RepoName/pages" -X POST --input - -H 'Accept: application/vnd.github+json' 2>$null | Out-Null
+# Kiem tra Pages da bat chua bang cach DOC lai, khong tin exit code cua POST.
+# Bug cu: POST that bai nhung script van in "Pages da bat".
+& $gh api "repos/$user/$RepoName/pages" 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
-  # Da bat truoc do -> cap nhat thay vi tao moi
-  $body | gh api "repos/$user/$RepoName/pages" -X PUT --input - -H 'Accept: application/vnd.github+json' 2>$null | Out-Null
+  & $gh api "repos/$user/$RepoName/pages" -X POST -H 'Accept: application/vnd.github+json' `
+      -f 'source[branch]=main' -f 'source[path]=/' 2>$null | Out-Null
+  Start-Sleep -Seconds 3
 }
-Start-Sleep -Seconds 3
-$pagesUrl = (gh api "repos/$user/$RepoName/pages" --jq .html_url 2>$null)
-if ([string]::IsNullOrWhiteSpace($pagesUrl)) {
+$pagesUrl = (& $gh api "repos/$user/$RepoName/pages" --jq .html_url 2>$null)
+if ([string]::IsNullOrWhiteSpace($pagesUrl) -or $pagesUrl -like '*Not Found*') {
   $pagesUrl = if ($UserSite) { "https://$user.github.io/" } else { "https://$user.github.io/$RepoName/" }
   Write-Host '    Chua doc duoc trang thai Pages qua API.' -ForegroundColor Yellow
   Write-Host "    Vao https://github.com/$user/$RepoName/settings/pages de bat tay neu can." -ForegroundColor Yellow

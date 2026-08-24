@@ -38,15 +38,23 @@
   /* ---------------- Handler mạng ---------------- */
   net.on('hello', payload => {
     // Host nhận lời chào -> gửi lại trạng thái ván hiện tại.
+    // Guest co the chao lai sau khi mang chop, nen luon tra loi.
+    const isNew = !S.mate;
     S.mate = { name: (payload?.name || 'Người chơi 2').slice(0, 16) };
     renderPlayers();
-    G.toast(`${S.mate.name} đã vào phòng.`);
-    if (net.isHost) net.send('welcome', { name: S.me.name, state: G.snapshot() }, false);
+    if (isNew) G.toast(`${S.mate.name} đã vào phòng.`);
+    if (net.isHost) net.send('welcome', { name: S.me.name, state: G.snapshot() });
   });
+
+  // Chi nap trang thai tu host MOT lan. Khong co co nay thi moi lan host tra loi
+  // 'welcome' (vd sau khi mang chop) se ghi de sach tien do dang choi.
+  let synced = false;
 
   net.on('welcome', payload => {
     S.mate = { name: (payload?.name || 'Chủ phòng').slice(0, 16) };
     renderPlayers();
+    if (synced) return;
+    synced = true;
     if (payload?.state) G.loadGame(payload.state);
     G.toast('Đã đồng bộ ván đấu.');
   });
@@ -74,9 +82,9 @@
     setConn('on', 'Đã kết nối');
     $('#waiting')?.setAttribute('hidden', '');
     closeLobby();
-    // Guest chào host; host đáp lại bằng 'welcome' kèm trạng thái ván.
-    if (!net.isHost) net.send('hello', { name: S.me.name }, false);
     renderPlayers();
+    // Khong gui 'hello' o day: doJoin() da chao ngay sau khi vao phong.
+    // Gui lai se lam host tra 'welcome' lan hai va xoa sach tien do.
   });
 
   net.onEvent('peer-leave', () => {
@@ -90,7 +98,26 @@
 
   net.onEvent('error', err => {
     console.warn('[net]', err);
-    G.toast('Lỗi kết nối: ' + (err?.type || err?.message || 'không rõ'));
+    const msg = err?.message
+      ? 'Lỗi mạng: ' + err.message
+      : 'Mất kết nối tới server. Đang thử lại…';
+    G.toast(msg, 5000);
+    if (!$('#lobby').hidden) lobbyError(msg);
+  });
+
+  net.onEvent('offline', () => {
+    if (net.roomCode) setConn('wait', 'Đang kết nối lại…');
+  });
+
+  net.onEvent('reconnecting', () => {
+    if (net.roomCode) setConn('wait', 'Đang kết nối lại…');
+  });
+
+  net.onEvent('reconnected', () => {
+    setConn(net.connected ? 'on' : 'wait', net.connected ? 'Đã kết nối' : 'Chờ bạn cùng chơi');
+    // Chao lai de dong bo: co the da lech nuoc di trong luc mat mang.
+    if (!net.isHost) net.send('hello', { name: S.me.name });
+    G.toast('Đã kết nối lại.');
   });
 
   /* ---------------- Lobby ---------------- */
@@ -155,6 +182,10 @@
       await net.join(code);
       setConn('on', 'Đã kết nối');
       updateHostUI();
+      closeLobby();
+      // Chao host ngay de lay trang thai van, khong cho nhip heartbeat 6s.
+      net.send('hello', { name: S.me.name });
+      history.replaceState(null, '', '#' + net.roomCode);
     } catch (err) {
       lobbyError(err?.message || 'Không vào được phòng.');
     } finally {

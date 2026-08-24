@@ -2,7 +2,9 @@
 
 Chơi Sudoku cùng nhau giữa PC và máy tính bảng. Hai máy điền chung một bảng, thấy nhau chọn ô và điền số ngay lập tức.
 
-Không cần backend: hai thiết bị nối trực tiếp qua WebRTC (PeerJS), nên host tĩnh trên GitHub Pages là đủ.
+Chỉ cần hai máy online là chơi được, không quan tâm chúng ở mạng nào — WiFi khác nhau, 4G, mạng công ty đều ok.
+
+Không cần backend riêng: hai máy đều nối *ra ngoài* tới một broker MQTT công khai qua WebSocket cổng 443, giống như mở một trang https. Nên host tĩnh trên GitHub Pages là đủ.
 
 ## Cách chơi
 
@@ -46,7 +48,7 @@ node server.js
 
 Mở `http://localhost:8080`. Muốn test từ máy tính bảng trong cùng WiFi thì dùng IP LAN của PC.
 
-Lưu ý: WebRTC cần HTTPS khi chạy trên domain thật. GitHub Pages có HTTPS sẵn nên không phải làm gì. `localhost` được miễn trừ nên test ở máy vẫn ổn.
+Lưu ý: broker dùng `wss://` nên trang phải chạy qua HTTPS. GitHub Pages có HTTPS sẵn. `localhost` được miễn trừ nên test ở máy vẫn ổn.
 
 ## Cấu trúc
 
@@ -54,7 +56,7 @@ Lưu ý: WebRTC cần HTTPS khi chạy trên domain thật. GitHub Pages có HTT
 index.html        khung trang + lobby
 css/style.css     giao diện, responsive cho tablet
 js/sudoku.js      sinh đề theo seed, giải, kiểm tra luật
-js/net.js         kết nối P2P qua PeerJS
+js/net.js         đồng bộ qua MQTT/WebSocket
 js/app.js         trạng thái ván, render bảng, nhập số
 js/wire.js        nối UI với mạng
 test-engine.js    test engine: node test-engine.js
@@ -65,6 +67,7 @@ server.js         static server để chạy thử ở máy
 
 ## Giới hạn
 
-- Cả hai máy phải online cùng lúc. Đóng tab là mất ván.
-- Một số mạng công ty hoặc 4G chặt có thể chặn P2P; lúc đó cần TURN server (chưa cấu hình).
-- Signaling dùng server công khai miễn phí của PeerJS, đôi khi chậm vào giờ cao điểm.
+- Cả hai máy phải online cùng lúc. Chủ phòng đóng tab là mất ván.
+- Broker (`broker.emqx.io`) là dịch vụ công khai miễn phí, không có cam kết uptime. Nếu nó chết, code tự chuyển sang `broker.hivemq.com`. Cả hai chết thì không chơi được.
+- Tin nhắn đi qua broker công cộng. Mã phòng là thứ duy nhất bảo vệ ván chơi: ai biết mã thì đọc được nước đi. Với Sudoku thì không sao, nhưng đừng dùng cơ chế này cho dữ liệu riêng tư.
+- Chưa test trên thiết bị thật giữa hai mạng khác nhau.
