@@ -72,7 +72,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
 
   // PC o nha: vao duoc ca 3 broker.
   const pc = new Machine('PC');
-  const n1 = await pc.connect([B.emqx, B.hive, B.mosq]);
+  const n1 = await pc.connect([B.emqx, B.hive, B.cn]);
   log(`1. PC noi duoc ${n1}/3 broker`);
   if (n1 === 0) { log('   FAIL: khong noi duoc broker nao'); process.exit(1); }
   pc.announce();

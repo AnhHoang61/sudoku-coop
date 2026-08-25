@@ -143,9 +143,10 @@
 
   /** Áp dụng nước đi tại chỗ rồi phát cho peer. */
   function commit(move) {
-    apply(move, 'me');
+    // Gui nuoc di TRUOC khi apply(): apply() co the phat hien xong va gui
+    // 'solved' ngay, may kia nen nhan so cuoi truoc roi moi nhan tin thang.
     net.send('move', move);
-    checkDone();
+    apply(move, 'me');
   }
 
   function apply(move, by) {
@@ -166,6 +167,9 @@
       setTimeout(() => cells[idx]?.classList.remove('flash'), 500);
     }
     render();
+    // Kiem tra o day chu khong o commit(): may nhan nuoc di cuoi cung cua ban
+    // cung phai thay banner + phao hoa, khong chi may vua dien.
+    checkDone();
   }
 
   function checkDone() {
@@ -186,6 +190,8 @@
     banner.innerHTML = `🎉 Xong rồi!<small>Thời gian ${fmt(ms)} · ${labelOf(S.difficulty)}</small>`;
     banner.hidden = false;
     render();
+    // Ăn mừng. Bọc try để hiệu ứng lỗi không chặn việc hiện kết quả.
+    try { window.fireworks?.(); } catch (e) { console.warn('[fx]', e); }
   }
 
   function labelOf(d) {
@@ -288,5 +294,5 @@
     };
   }
 
-  window.__sudoku = { S, net, loadGame, newGame, snapshot, apply, render, toast, fmt, labelOf, buildBoard, buildPad, startTimer, select };
+  window.__sudoku = { S, net, loadGame, newGame, snapshot, apply, render, toast, fmt, labelOf, buildBoard, buildPad, startTimer, select, finish };
 })();

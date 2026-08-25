@@ -74,8 +74,12 @@
     G.toast('Ván mới từ bạn cùng chơi.');
   });
 
-  net.on('solved', () => {
-    if (!S.solved) G.toast('Bạn cùng chơi báo đã xong!');
+  net.on('solved', payload => {
+    if (S.solved) return;
+    // Binh thuong may nay da tu phat hien xong trong apply(). Nhanh nay la luoi
+    // an toan cho truong hop nuoc di cuoi bi mat: van an mung theo bao cua ban.
+    G.toast('Bạn cùng chơi báo đã xong!');
+    G.finish(Number(payload?.ms) || (Date.now() - S.startedAt));
   });
 
   net.onEvent('peer-join', () => {
